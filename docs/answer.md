@@ -1,5 +1,8 @@
 # Marijn's Answer
 
+> This is my answer, taken from [StackOverflow](http://stackoverflow.com/a/33797841/322283)
+
+
 You can use Markdown and reStructuredText in the same Sphinx project. How to do this is succinctly documented on [Read The Docs]. Install recommonmark (`pip install recommonmark`) and then edit `conf.py`:
 
     from recommonmark.parser import CommonMarkParser
