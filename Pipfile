@@ -11,3 +11,6 @@ myst-parser = "*"
 
 [requires]
 python_version = "3.7"
+
+[scripts]
+build = "./build_docs.sh"
