@@ -30,3 +30,11 @@ jobs:
         uses: VaultVulp/action-pipenv@v2.0.1
         with:
           command: run build
+      - name: Publish to GitHub Pages
+        if: success()
+        uses: crazy-max/ghaction-github-pages@v2
+        with:
+          target_branch: gh-pages
+          build_dir: ./docs/_build/html
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
