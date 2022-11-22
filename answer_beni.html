@@ -1,0 +1,138 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Beni’s very comprehensive answer &#8212; Sphinx with Markdown 0.2.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Marijn’s Answer" href="answer.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="beni-s-very-comprehensive-answer">
+<h1>Beni’s very comprehensive answer<a class="headerlink" href="#beni-s-very-comprehensive-answer" title="Permalink to this heading">¶</a></h1>
+<blockquote>
+<div><p>This is Beni’s answer, taken from <a class="reference external" href="http://stackoverflow.com/a/2487862/322283">StackOverflow</a></p>
+</div></blockquote>
+<p>The “proper” way to do that would be to write a <a class="reference external" href="http://docutils.sourceforge.net/docs/dev/hacking.html#parsing-the-document">docutils parser</a> for markdown.  (Plus a Sphinx option to choose the parser.)  The beauty of this would be instant support for all docutils output formats (but you might not care about that, as similar markdown tools already exist for most).  Ways to approach that without developing a parser from scratch:</p>
+<ul class="simple">
+<li><p>You could cheat and write a “parser” that uses <a class="reference external" href="http://johnmacfarlane.net/pandoc/">Pandoc</a> to convert markdown to RST and pass that to the RST parser :-).</p></li>
+<li><p>You can use an existing markdown-&gt;XML parser and transform the result (using XSLT?) to the docutils schema.</p></li>
+<li><p>You could take some <a class="reference external" href="http://lepture.com/en/2014/markdown-parsers-in-python">existing python markdown parser</a> that lets you define a custom renderer and make it build docutils node tree.</p></li>
+<li><p>You could fork the existing RST reader, ripping out everything irrelevant to markdown and changing the different syntaxes (<a class="reference external" href="https://gist.github.com/dupuy/1855764">this comparison</a> might help)…<br />
+EDIT: I don’t recommend this route unless you’re prepared to heavily test it.  Markdown already has too many subtly different dialects and this will likely result in yet-another-one…</p></li>
+</ul>
+<p><strong>UPDATE:</strong> https://github.com/sgenoud/remarkdown is a markdown reader for docutils.  It didn’t take any of the above shortcuts but uses a <a class="reference external" href="https://pypi.python.org/pypi/Parsley">Parsley</a> PEG grammar inspired by <a class="reference external" href="https://github.com/jgm/peg-markdown">peg-markdown</a>. <a class="reference external" href="https://github.com/sgenoud/remarkdown/issues/2">Doesn’t yet</a> support directives.</p>
+<p><strong>UPDATE: https://github.com/rtfd/recommonmark and is another docutils reader, natively supported on ReadTheDocs.</strong>  Derived from remarkdown but uses the <a class="reference external" href="https://github.com/rolandshoemaker/">CommonMark-py</a> parser.  Doesn’t support directives, but <a class="reference external" href="https://recommonmark.readthedocs.org/en/latest/auto_structify.html">can convert</a> more or less natural Markdown syntaxes to appropriate structures e.g. list of links to a toctree.  For other needs, an <a class="reference external" href="https://recommonmark.readthedocs.org/en/latest/auto_structify.html#embed-restructuredtext"><code class="docutils literal notranslate"><span class="pre">```eval_rst</span></code> fenced block</a> lets you embed any rST directive.</p>
+<hr class="docutils" />
+<p>In <strong>all</strong> cases, you’ll need to invent extensions of Markdown to represent <a class="reference external" href="http://sphinx-doc.org/markup/index.html">Sphinx directives and roles</a>.  While you may not need all of them, some like <code class="docutils literal notranslate"><span class="pre">..</span> <span class="pre">toctree::</span></code> are essential.<br />
+This I think is the hardest part.  reStructuredText before the Sphinx extensions was already richer than markdown.  Even heavily extended markdown, such as <a class="reference external" href="http://johnmacfarlane.net/pandoc/README.html#pandocs-markdown">pandoc’s</a>, is mostly a subset of rST feature set.  That’s a lot of ground to cover!</p>
+<p>Implementation-wise, the easiest thing is adding a generic construct to express any docutils role/directive.  The obvious candidates for syntax inspiration are:</p>
+<ul class="simple">
+<li><p>Attribute syntax, which pandoc and some other implementations already allow on many inline and block constructs.  For example <code class="docutils literal notranslate"><span class="pre">`foo`{.method}</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">`foo`:method:</span></code>.</p></li>
+<li><p>HTML/XML.  From <code class="docutils literal notranslate"><span class="pre">&lt;span</span> <span class="pre">class=&quot;method&quot;&gt;foo&lt;/span&gt;</span></code> to the kludgiest approach of just inserting docutils internal XML!</p></li>
+<li><p>Some kind of YAML for directives?</p></li>
+</ul>
+<p>But such a generic mapping will not be the most markdown-ish solution…
+Currently most active places to discuss markdown extensions are https://groups.google.com/forum/#!topic/pandoc-discuss, https://github.com/scholmd/scholmd/</p>
+<p>This also means you can’t just reuse a markdown parser without extending it somehow.  Pandoc again lives up to its reputation as the swiss army knife of document conversion by supporting <a class="reference external" href="http://johnmacfarlane.net/pandoc/scripting.html">custom filtes</a>.  (In fact, if I were to approach this I’d try to build a generic bridge between docutils readers/transformers/writers and pandoc readers/filters/writers.  It’s more than you need but the payoff would be much wider than just sphinx/markdown.)</p>
+<hr class="docutils" />
+<p>Alternative crazy idea: instead of extending markdown to handle Sphinx, extend reStructuredText to support (mostly) a superset of markdown!  The beauty is you’ll be able to use any Sphinx features as-is, yet be able to write most content in markdown.</p>
+<p>There is already <a class="reference external" href="https://gist.github.com/dupuy/1855764">considerable syntax overlap</a>; most notably link syntax is incompatible.  I think if you add support to RST for markdown links, and <code class="docutils literal notranslate"><span class="pre">###</span></code>-style headers, and change default <code class="docutils literal notranslate"><span class="pre">`backticks`</span></code> role to literal, and maybe change indented blocks to mean literal (RST supports <code class="docutils literal notranslate"><span class="pre">&gt;</span> <span class="pre">...</span></code> for quotations nowdays), you’ll get something usable that supports most markdown.</p>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Sphinx with Markdown</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="question.html">Question: Using sphinx with Markdown instead of RST</a></li>
+<li class="toctree-l1"><a class="reference internal" href="answer.html">Marijn’s Answer</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Beni’s very comprehensive answer</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="answer.html" title="previous chapter">Marijn’s Answer</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, Marijn van der Zee.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/answer_beni.md.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
