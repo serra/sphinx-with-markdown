@@ -10,7 +10,7 @@ sphinx = "*"
 myst-parser = "*"
 
 [requires]
-python_version = "3.7"
+python_version = "3.8"
 
 [scripts]
 build = "./build_docs.sh"
